@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class EloquentDataTable extends QueryDataTable
 {
@@ -174,6 +175,18 @@ class EloquentDataTable extends QueryDataTable
                     $deletedAt = $this->checkSoftDeletesOnModel($model->getRelated());
                     break;
 
+                case $model instanceof HasManyThrough:
+                    $firstTable = substr($model->getQualifiedFirstKeyName(),0, strpos($model->getQualifiedFirstKeyName(), '.'));
+                    $table = substr($model->getQualifiedFarKeyName(),0, strpos($model->getQualifiedFarKeyName(), '.'));
+                    $firstKey = $model->getQualifiedFirstKeyName();
+                    $localKey = $model->getQualifiedLocalKeyName();
+                    $foreign = $model->getQualifiedFarKeyName();
+                    $other = $model->getQualifiedParentKeyName();
+                    $this->performJoin($firstTable, $firstKey, $localKey);
+                    $lastQuery->addSelect($table . '.*');
+                    $this->performJoin($table, $foreign, $other);
+                    break;
+                    
                 default:
                     throw new Exception('Relation ' . get_class($model) . ' is not yet supported.');
             }
